@@ -1,0 +1,251 @@
+#Global Variables
+traitchosen = 0
+
+#Any time PunnetSquare class is called, an object is created
+#Containing Trait name/Allele Letter/Zygosity/Dominance as applicable
+class PunnetSquare:  
+
+  def __init__(self): 
+    #When object is created, getTraitDetails is immediately called
+    #getUserInput defined later. Used as catch-all to check inputs for validity
+
+    #Learning point : Was attempting to initialize an object again for every time the user needed to input details again. It was producing errors, and the solution was to define a separate method for getting inputs.
+    self.getTraitDetails()
+
+  def getTraitDetails(self):
+    if traitchosen == 0: #Check to see if trait is already chosen
+      self.alleleLetter = str(' ') #Set var to null in order to start loop
+      
+      #Trait name accepts any input as a name
+      self.traitName = str(
+          self.getUserInput('Enter trait name\nExample : Brown/Blue eyes\n', None)).title()
+      
+      #Loop will run until alleleLetter is single Alphabet character
+      while not self.alleleLetter.isalpha():#Error here no factor
+        self.alleleLetter = self.getUserInput(
+            '\nEnter letter to identify alleles of trait\n(One Letter) ', str)
+    else:
+      self.traitName = ' '
+      self.alleleLetter = ' ' #Not needed a second time if trait already chosen
+
+    self.zygosity = 0  #1/2 entry for zygosity and dominance makes program user-friendly
+    while self.zygosity not in [1, 2]:
+      self.zygosity = self.getUserInput(
+          '\n(Input 1/2)\n1.Homozygous\n2.Heterozygous ', int)
+
+    if self.zygosity == 1: #Dominance only applies to homozygous genotypes
+      self.dominance = 0
+      while self.dominance not in [1, 2]:
+        self.dominance = self.getUserInput(
+            '\n(Input 1/2)\n1.Recessive\n2.Dominant ', int)
+
+  #Method to verify User input based on specified data type by providing custom prompt
+  def getUserInput(self, prompt, data_type):
+    while True:
+      if data_type == int: #Used for integer input checks
+        try:
+          userInput = int(input(f'{prompt}'))
+          return userInput
+        except ValueError:
+          print("\nUnexpected input, enter number ")
+      elif data_type == str: #This is used specifically for alleleLetter strings
+        userInput = input(f'{prompt}')
+        if type(userInput) is str and len(userInput) == 1:
+          return userInput
+        else:
+          print(
+              "\nUnexpected input\nEnter single letter identifier\nEx: A or a "
+          )
+          continue
+      else: #Final else should gracefully handle any other unexpected errors
+        try:
+          userInput = input(f'{prompt}')
+          return userInput
+        except ValueError:
+          print("\nUnexpected input, try again")
+          continue
+
+  #Method can be called on object to print all details input previously
+  def showTraitDetails(self, parent_type):
+    lgLine = "-" * 14
+    zygStr = 'Homozygous' if self.zygosity == 1 else 'Heterozygous' #Turn integer inputs into strings for printing
+
+    #Following logic will check to ensure that program only prints data that has been entered
+    #This is neccesary to prevent errors due to undefined variables in second parent object
+    if traitchosen == 0:
+      if self.zygosity == 1:
+        domStr = 'Recessive' if self.dominance == 1 else 'Dominant'
+        print(
+            f'{lgLine}\nDetails for {parent_type}\nTrait Name: {self.traitName}\nZygosity: {zygStr}\nDominance: {domStr}\nLetter: {self.alleleLetter}\n{lgLine}'
+        )
+      else:
+        print(
+            f'{lgLine}\nDetails for {parent_type}\nTrait Name: {self.traitName}\nZygosity: {zygStr}\nLetter: {self.alleleLetter}\n{lgLine}'
+        )
+    else:
+      if self.zygosity == 1:
+        domStr = 'Recessive' if self.dominance == 1 else 'Dominant'
+        print(
+            f'{lgLine}\nDetails for {parent_type}\nZygosity: {zygStr}\nDominance: {domStr}\n{lgLine}'
+        )
+      else:
+        print(
+            f'{lgLine}\nDetails for {parent_type}\nZygosity: {zygStr}\n{lgLine}'
+        )
+
+  #Method can be called, in which it will call previous showTraitDetails method to print details
+  #confirmTraitDetails method will allow user to correct any errors in data input, or quit to main menu
+  def confirmTraitDetails(self, parent_type):
+    self.showTraitDetails(parent_type)
+    user_trait_confirmation = 0
+    while True:
+      user_trait_confirmation = input('CONFIRM\nY/N, or Q to quit ').lower()
+      if user_trait_confirmation not in ['y', 'n', 'q']:
+        print("\nTry again (Y/N/Q)")
+        continue
+      elif user_trait_confirmation in ['q']:
+        main()
+      elif user_trait_confirmation in ['n']:
+        print('\nRe-enter details')
+        return False
+      else:
+        return True
+
+
+#main function holds bulk of program logic. main() calls mainMenu() which will call generateSquare() with valid data
+def main():
+  print(
+      "\nWelcome to the Punnet Square generator!\n Choose from the main menu items (1-2)."
+  )
+
+  #Function that will take mainMenu() results and objects to create the Punnett Square
+  #mainMenu() is defined at line 192
+  def generateSquare(maternal_trait, paternal_trait):
+    row_amount = 3 #Programmer set
+    column_amount = 3 #Programmer set
+    chart = [['   ' for i in range(column_amount)] for i in range(row_amount)]
+    #The chart generation allows for scalability, but the other parts of the program do not account for this, 3x3 will be the scope.
+    chart[0][0] = 'P/M' #Top left box of chart, 'Paternal/Maternal' is reflected
+
+    #Function to print chart with readability in mind
+    def printChart():
+      for row in chart:
+        separator = '-' * (len(chart[0][0]) + 1) * len(chart[0]) 
+        print('|'.join(row))
+        print(separator)
+
+    #1 for homozygous 2 for hetero, 1 recessive 2 dominant
+    #Assigning variables here for easy use
+    #TraitUpper/Lower will reflect data based on zygosity input by User
+    traitUpper = f' {maternal_trait.alleleLetter.upper()} '
+    traitLower = f' {maternal_trait.alleleLetter.lower()} '
+    matZy, matDom = maternal_trait.zygosity, ''
+    #Dominance is defined after zygosity, due to not being defined in Heterozygous situations, to avoid errors
+    if matZy == 1:
+      matDom = maternal_trait.dominance
+    patZy, patDom = paternal_trait.zygosity, ''
+    if patZy == 1:
+      patDom = paternal_trait.dominance
+
+    #Draw maternal parent alleles on top row
+    if matZy == 2:
+      chart[0][1] = traitUpper
+      chart[0][2] = traitLower
+    elif matZy == 1:
+      chart[0][1] = chart[0][2] = traitUpper if matDom == 2 else traitLower
+    #Draw paternal parent alleles on left-most column
+    if patZy == 2:
+      chart[1][0] = traitUpper
+      chart[2][0] = traitLower
+    elif patZy == 1:
+      chart[1][0] = chart[2][0] = traitUpper if patDom == 2 else traitLower
+
+    innerList = {} #Create dictionary to assign count to different allele combos
+    #ex: {'Tt:2, TT:1, tt:1'}
+
+    #Following logic will combine top row and left-most column to fill out 2x2 bottom right portion of square
+    for mat in range(1, len(chart)):
+      for pat in range(1, len(chart[mat])):
+          #sorted() function ensures capital letters are listed first
+          finalContent = ''.join(sorted(chart[0][mat] + chart[pat][0])).replace(' ', '')
+          chart[mat][pat] = f' {finalContent}'
+
+          #If-else logic adds any combos not found to innerList, adds count for duplicates
+          if finalContent not in innerList:
+            innerList[finalContent] = 1
+          else:
+            innerList[finalContent] += 1
+            
+    print()
+    printChart() #Prints for readability
+    print('Phenotype percentages:')
+    print(maternal_trait.traitName)
+    
+    #Following logic will check Innerlist
+    #i holds count of duplicates of each genotype
+    #trait holds each trait combination
+    for trait, i in innerList.items(): 
+      
+      # Calculate the percentage of occurrences of a specific genotype by dividing its count (i) by the total number of possible combinations (4) and then multiplying by 100.
+      percentage = (i/4) * 100 
+      print(f'{trait} : {percentage}%')
+
+  
+
+  #function prints main menu list to begin functionality of the program
+  def mainMenu():
+    global traitchosen
+    traitchosen = 0
+    maternal_trait = 0
+    paternal_trait = 0
+    lgLine = "-" * 14
+    items = '\n1. NEW SQUARE\n2. QUIT\n'
+    userChoice = 0
+    current_Parent = 'Maternal Parent'
+    #(1 = new sqr, 2 = quit)
+    while userChoice not in [1, 2]: 
+      # Continuously prompt the user for a valid choice until they select either '1' to create a new Punnett Square or '2' to quit.
+
+      #Check for errors in  input
+      try:
+        userChoice = int(input(lgLine + items + lgLine + '\n'))
+      except ValueError:
+        print("\nEnter numbers 1 or 2 for menu items")
+        continue
+
+    #(1.Create new square
+    if userChoice == 1:
+      print(f" 1. NEW SQUARE\n {current_Parent}\n" + lgLine)
+      maternal_trait = PunnetSquare() 
+      # Creating the maternal_trait object to gather details about the maternal parent's genetic traits.
+
+      #Following loop will run after maternal_trait is created
+      #and continue until object method getTraitDetails returns true
+      #User will either have to confirm data or quit program
+      while not maternal_trait.confirmTraitDetails(current_Parent):
+        maternal_trait.getTraitDetails()
+
+      #Loop termination results in trait being chosen and parent being switched
+      traitchosen = 1
+      current_Parent = '\nPaternal Parent'
+      print(f"{current_Parent}\n" + lgLine)
+
+      # Creating the paternal_trait object to gather details about the paternal parent's genetic traits.
+      paternal_trait = PunnetSquare() 
+      #Loop will operate identically to Maternal confirmation loop
+      while not paternal_trait.confirmTraitDetails(current_Parent):
+        paternal_trait.getTraitDetails()
+
+      #Program will call generateSquare (line 122) using the objects created, and will use that data to generate square
+      #Program will generate square based on previously defined logic and will end
+      generateSquare(maternal_trait, paternal_trait)
+
+    #(2.Quit program 
+    else:
+      quit()
+
+  mainMenu() #Mainmenu is called after welcome message
+
+
+main() #Main is called when program starts
+
